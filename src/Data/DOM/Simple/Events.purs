@@ -1,5 +1,7 @@
 module Data.DOM.Simple.Events where
 
+import Prelude
+
 import Control.Monad.Eff
 import Control.Monad
 
@@ -7,6 +9,7 @@ import Data.DOM.Simple.Types
 import Data.DOM.Simple.Window(document, globalWindow)
 import Data.DOM.Simple.Ajax
 import Data.DOM.Simple.Unsafe.Events
+import DOM
 
 -- XXX Should this be in the Prelude?
 class Read s where
@@ -27,31 +30,44 @@ instance eventDOMEvent :: Event DOMEvent where
 {- Mouse Events -}
 
 data MouseEventType = MouseMoveEvent | MouseOverEvent | MouseEnterEvent
-                    | MouseOutEvent | MouseLeaveEvent
+                    | MouseOutEvent | MouseLeaveEvent | MouseClickEvent
+                    | MouseDblClickEvent | MouseUpEvent | MouseDownEvent
 
 instance mouseEventTypeShow :: Show MouseEventType where
-  show MouseMoveEvent   = "mousemove"
-  show MouseOverEvent   = "mouseover"
-  show MouseEnterEvent  = "mouseenter"
-  show MouseOutEvent    = "mouseout"
-  show MouseLeaveEvent  = "mouseleave"
+  show MouseMoveEvent     = "mousemove"
+  show MouseOverEvent     = "mouseover"
+  show MouseEnterEvent    = "mouseenter"
+  show MouseOutEvent      = "mouseout"
+  show MouseLeaveEvent    = "mouseleave"
+  show MouseClickEvent    = "click"
+  show MouseDblClickEvent = "dblclick"
+  show MouseUpEvent       = "mouseup"
+  show MouseDownEvent     = "mousedown"
 
 instance mouseEventTypeRead :: Read MouseEventType where
-  read "mousemove"   = MouseMoveEvent
-  read "mouseover"   = MouseOverEvent
-  read "mouseenter"  = MouseEnterEvent
-  read "mouseout"    = MouseOutEvent
-  read "mouseleave"  = MouseLeaveEvent
+  read "mousemove"  = MouseMoveEvent
+  read "mouseover"  = MouseOverEvent
+  read "mouseenter" = MouseEnterEvent
+  read "mouseout"   = MouseOutEvent
+  read "mouseleave" = MouseLeaveEvent
+  read "click"      = MouseClickEvent
+  read "dblclick"   = MouseDblClickEvent
+  read "mouseup"    = MouseUpEvent
+  read "mousedown"  = MouseDownEvent
 
 class (Event e) <= MouseEvent e where
   mouseEventType :: forall eff. e -> (Eff (dom :: DOM | eff) MouseEventType)
-  screenX :: forall eff. e -> (Eff (dom :: DOM | eff) Number)
-  screenY :: forall eff. e -> (Eff (dom :: DOM | eff) Number)
+  screenX :: forall eff. e -> (Eff (dom :: DOM | eff) Int)
+  screenY :: forall eff. e -> (Eff (dom :: DOM | eff) Int)
+  clientX :: forall eff. e -> (Eff (dom :: DOM | eff) Int)
+  clientY :: forall eff. e -> (Eff (dom :: DOM | eff) Int)
 
 instance mouseEventDOMEvent :: MouseEvent DOMEvent where
   mouseEventType ev = read <$> unsafeEventStringProp "type" ev
   screenX = unsafeEventNumberProp "screenX"
   screenY = unsafeEventNumberProp "screenY"
+  clientX = unsafeEventNumberProp "clientX"
+  clientY = unsafeEventNumberProp "clientY"
 
 class MouseEventTarget b where
   addMouseEventListener :: forall e t ta. (MouseEvent e) =>
@@ -95,7 +111,7 @@ instance keyboardEventTypeRead :: Read KeyboardEventType where
 
 data KeyLocation = KeyLocationStandard | KeyLocationLeft | KeyLocationRight | KeyLocationNumpad
 
-toKeyLocation :: Number -> KeyLocation
+toKeyLocation :: Int -> KeyLocation
 toKeyLocation 0 = KeyLocationStandard
 toKeyLocation 1 = KeyLocationLeft
 toKeyLocation 2 = KeyLocationRight
@@ -104,7 +120,7 @@ toKeyLocation 3 = KeyLocationNumpad
 class (Event e) <= KeyboardEvent e where
   keyboardEventType :: forall eff. e -> (Eff (dom :: DOM | eff) KeyboardEventType)
   key         :: forall eff. e -> (Eff (dom :: DOM | eff) String)
-  keyCode     :: forall eff. e -> (Eff (dom :: DOM | eff) Number)
+  keyCode     :: forall eff. e -> (Eff (dom :: DOM | eff) Int)
   keyLocation :: forall eff. e -> (Eff (dom :: DOM | eff) KeyLocation)
   altKey      :: forall eff. e -> (Eff (dom :: DOM | eff) Boolean)
   ctrlKey     :: forall eff. e -> (Eff (dom :: DOM | eff) Boolean)
@@ -182,7 +198,7 @@ instance uiEventTypeRead :: Read UIEventType where
 class (Event e) <= UIEvent e where
   -- XXX this should really be returning an HTMLAbstractView...
   view   :: forall eff. e -> (Eff (dom :: DOM | eff) HTMLWindow)
-  detail :: forall eff. e -> (Eff (dom :: DOM | eff) Number)
+  detail :: forall eff. e -> (Eff (dom :: DOM | eff) Int)
 
 instance uiEventDOMEvent :: UIEvent DOMEvent where
   view   = unsafeEventView

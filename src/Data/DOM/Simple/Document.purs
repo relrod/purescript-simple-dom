@@ -1,5 +1,8 @@
 module Data.DOM.Simple.Document where
 
+import Prelude
+
+import DOM
 import Control.Monad.Eff
 
 import Data.DOM.Simple.Types
@@ -9,10 +12,11 @@ import Data.DOM.Simple.Unsafe.Element
 import Data.DOM.Simple.Unsafe.Document
 
 class Document b where
-  title     :: forall eff. b -> (Eff (dom :: DOM | eff) String)
-  setTitle  :: forall eff. String -> b -> (Eff (dom :: DOM | eff) Unit)
-  body      :: forall eff. b -> (Eff (dom :: DOM | eff) HTMLElement)
-  setBody   :: forall eff. HTMLElement -> b -> (Eff (dom :: DOM | eff) Unit)
+  title         :: forall eff. b -> (Eff (dom :: DOM | eff) String)
+  setTitle      :: forall eff. String -> b -> (Eff (dom :: DOM | eff) Unit)
+  body          :: forall eff. b -> (Eff (dom :: DOM | eff) HTMLElement)
+  setBody       :: forall eff. HTMLElement -> b -> (Eff (dom :: DOM | eff) Unit)
+  createElement :: forall eff. String -> b -> (Eff (dom :: DOM | eff) HTMLElement)
 
 instance htmlDocumentElement :: Element HTMLDocument where
   getElementById id el    = (unsafeGetElementById id el) >>= (return <<< ensure)
@@ -24,7 +28,10 @@ instance htmlDocumentElement :: Element HTMLDocument where
   setAttribute            = unsafeSetAttribute
   hasAttribute            = unsafeHasAttribute
   removeAttribute         = unsafeRemoveAttribute
+  getStyleAttr            = unsafeGetStyleAttr
+  setStyleAttr            = unsafeSetStyleAttr
   children                = unsafeChildren
+  appendChild             = unsafeAppendChild
   innerHTML               = unsafeInnerHTML
   setInnerHTML            = unsafeSetInnerHTML
   textContent             = unsafeTextContent
@@ -36,12 +43,18 @@ instance htmlDocumentElement :: Element HTMLDocument where
   classAdd                = unsafeClassAdd
   classToggle             = unsafeClassToggle
   classContains           = unsafeClassContains
+  offsetParent el         = (unsafeOffsetParent el) >>= (ensure >>> return)
+  offsetHeight            = unsafeOffsetHeight
+  offsetWidth             = unsafeOffsetWidth
+  offsetTop               = unsafeOffsetTop
+  offsetLeft              = unsafeOffsetLeft
 
 instance htmlDocument :: Document HTMLDocument where
   title                   = unsafeTitle
   setTitle                = unsafeSetTitle
   body                    = unsafeBody
   setBody                 = unsafeSetBody
+  createElement           = unsafeCreateElement
 
 instance showHtmlDocument :: Show HTMLDocument where
   show = showImpl
